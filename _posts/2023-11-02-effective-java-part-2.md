@@ -18,6 +18,7 @@ tags: [effective,java]
     3. 제때 파괴됨을 보장하고 파괴 전에 수행해야 할 정리 작업을 관리하는 요령
 
 ## 1. 생성자 대신 정적 팩터리 메서드를 고려하라
+***
 
 클래스의 인스턴스를 얻는 대표적인 방법은 public 생성자다.
 하지만 정적 팩토리 메서드(static factory method)를 제공할 수 있다.
@@ -75,6 +76,8 @@ Object newArray = Array.newInstance(classObject, arrayLen);
 
 ## 2. 생성자에 매개변수가 많다면 빌더를 고려하라
 
+***
+
 만약 생성자가 100 개라면 어떨까? 100개의 매개변수를 순서를 맞춰 생성자를 생성하는 것은 매우 고역이다.
 이때 사용할 수 있는 방법은
 
@@ -101,6 +104,8 @@ NutritionFacts cocaCola = new NutritionFacts.Builder()
 빌더 패턴은 계층적으로 설계된 클래스와 함께 쓰기 좋다.
 이 책에서는 Pizza > Cheeze, Pepperoni로 설명하고 있다.
 
+### Pizza 클래스(부모 클래스)
+
 ````java
 public abstract class Pizza{
   public enum Topping { HAM, MUSHROOM, ONION}
@@ -125,6 +130,8 @@ public abstract class Pizza{
 }
 ````
 추상 메서드인 self를 더해 하위클래스에서 형변환하지 않고 메서드 연쇄를 지원할 수 있다.
+
+### CheezePizza 클래스(자식 클래스 1)
 
 ````java
 public class CheezePizza extends Pizza{
@@ -154,6 +161,8 @@ public class CheezePizza extends Pizza{
 }
 ````
 치즈 피자는 size 매개변수를 필수로 받는다.
+
+### 페퍼로니 피자 클래스(자식 클래스2)
 
 ````java
 public class Pepperoni extends Pizza{
@@ -205,4 +214,88 @@ addToping method를 통해 toppings에 topping을 더하고, self()를 반환한
 
 ## 3. private 생성자나 열거 타입으로 싱글턴임을 보증하라
 
-    Singleton 패턴 : 인스턴스를 오직 하나만 생성게
+***
+
+### Singleton 패턴이란?
+- 인스턴스를 오직 하나만 생성할 수 있는 클래스 ex) 함수 객체, 시스템 컴포넌트
+- 한계)
+  - 싱글턴 클래스를 사용하는 클라이언트를 테스트하기 어렵다
+  - 왜? 싱글턴 인스턴스를 mock 구현으로 대체할 수 없기 때문에
+  - mocking하려면 새로운 인스턴스를 만들어야 한다 but 싱글턴 패턴의 경우 새로운 인스턴스를 생성하는 것이 불가능하다
+
+### Singleton 패턴 만드는 방식 1- public static final
+
+````java
+public class Elivs{
+  public static final Elvis INSTANCE = new Elvis();
+  private Elvis(){ ... }
+  
+  public void leaveTheBuilding() { ... }
+}
+````
+첫 번째 방식은 생성자를 private으로 감춰두고, 이는 Elvis.INSTANCE를 초기화할 때 딱 한번 호출된다.
+
+public이나 protected 생성자가 없으므로 인스턴스가 전체 시스템에서 하나뿐임이 보장된다. 
+
+예외) Reflection API를 통해 private 생성자를 호출할 수 있다
+
+방어) 두 번째 객체가 생성되려 할 때 예외를 던진다
+
+
+- 장점
+  - 해당 클래스가 싱글턴임이 API에 명백히 드러난다.
+  - 간결한다.
+
+### Singleton 패턴 만드는 방식 2 - 정적 팩토리 메서드
+
+````java
+public class Elvis{ 
+    private static final Elvis INSTANCE = new Elvis();
+    private Elvis(){ ... }
+    private static Elvis getInstance() {return INSTANCE;}
+  
+  public void leaveTheBuilding(){ ... }
+}
+````
+두 번째 방식은 정적 팩터리 메소드를 public static 멤버로 제공한다.
+
+Elvis.getInstance()는 항상 같은 객체의 참조를 반환하므로 인스턴스가 전체 시스테에서 하나뿐임이 보장된다.
+
+첫 번째 방식과 마찬가지로 Reflection 예외는 존재한다.
+
+- 장점
+  - API를 변경하지 않고 싱글턴이 아니게 변경할 수 있다.
+  - 정적 팩토리 -> 제너릭 싱글턴 팩토리로 만들 수 있다.
+  - 정적 팩토리의 메서드 참조를 supplier로 사용할 수 있다.
+
+- 위 두 방식의 단점
+  - 직렬화된 인스턴스를 역직렬화 할 때마다 새로운 인스턴스가 만들어진다.
+  - readResolve 메소드를 제공해야 하는데 복잡하다.
+
+### Singleton 패턴 만드는 방식 3 - 열거 타입 선언
+
+````java
+public enum Elivs{
+    INSTANCE;
+    
+    public void leaveTheBuilder(){ ... }
+}
+````
+훨씬 간결하고, 추가 노력 없이 직렬화 할 수 있다. 하지만 싱글턴이 Enum 외의 클래스를 상속해야 한다면 사용할 수 없다.
+
+
+## 4. 인스턴스화를 막으려거든 private 생성자를 사용하라
+***
+정적 메서드와 정적 필드만을 담은 클래스를 만들 때가 있다. 이러한 클래스는 인스턴스로 만들어 쓰려고 만든 것이 아니다.
+하지만 생성자를 명시하지 않으면 컴파일러가 자동으로 기본 생성자를 만들어준다. 이때 생성자를 private을 만들어주면 된다!
+
+````java
+public class UtilityClss{
+    //인스턴스화 방지
+    private UtilityClss(){
+        //throw new AssertionError();
+    }
+}
+````
+
+이 방식은 상속을 불가능하게 하는 효과도 있다! 

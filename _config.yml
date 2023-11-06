@@ -134,7 +134,7 @@ collections:
 
 defaults:
   - scope:
-      path: "" # An empty string here means all files in the project
+      path: /_posts/ # An empty string here means all files in the project
       type: posts
     values:
       layout: post
@@ -143,6 +143,10 @@ defaults:
       # DO NOT modify the following parameter unless you are confident enough
       # to update the code of all other post links in this project.
       permalink: /posts/:title/
+  - scope:
+      path: assets/img
+    values:
+      image: true
   - scope:
       path: _drafts
     values:

@@ -23,7 +23,7 @@ description: >- # used by seo meta and the atom feed
 
 # Fill in the protocol & hostname for your site.
 # e.g. 'https://username.github.io', note that it does not end with a '/'.
-url: "https://honghyunshik.github.io/"
+url: "https://honghyunshik.github.io"
 
 github:
   username: github_username # change to your github username
@@ -134,7 +134,7 @@ collections:
 
 defaults:
   - scope:
-      path: "assets/img" # An empty string here means all files in the project
+      path: "" # An empty string here means all files in the project
       type: posts
     values:
       image: true

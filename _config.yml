@@ -16,7 +16,7 @@ timezone: Asia/Shanghai
 
 title: IT Study Cafe # the main title
 
-tagline: IT 관련 스터디 내용을 기술하는 블로그입니다. # it will display as the sub-title
+tagline: A text-focused Jekyll theme # it will display as the sub-title
 
 description: >- # used by seo meta and the atom feed
   A minimal, responsive and feature-rich Jekyll theme for technical writing.
@@ -134,7 +134,7 @@ collections:
 
 defaults:
   - scope:
-      path: /_posts/ # An empty string here means all files in the project
+      path: "" # An empty string here means all files in the project
       type: posts
     values:
       layout: post
@@ -143,10 +143,6 @@ defaults:
       # DO NOT modify the following parameter unless you are confident enough
       # to update the code of all other post links in this project.
       permalink: /posts/:title/
-  - scope:
-      path: assets/img
-    values:
-      image: true
   - scope:
       path: _drafts
     values:

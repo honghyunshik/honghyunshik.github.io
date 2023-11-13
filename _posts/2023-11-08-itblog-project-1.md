@@ -1,5 +1,5 @@
 ---
-title: IT Blog 프로젝트 1일차
+title: IT Blog 프로젝트 1일차 - 회원가입
 author: honghyunshik
 date: 2023-11-08 14:30:00 +0800
 categories: [Project, SpringBoot]

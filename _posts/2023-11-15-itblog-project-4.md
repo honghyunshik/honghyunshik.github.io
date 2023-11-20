@@ -254,21 +254,125 @@ String[] javaSpringBootKeywords = {
 };
 </details>
 
-### 검색 조건
-
-1. 최근 1년 이내 작성된 글
-2. Tistory 플랫폼에서 작성된 글
-3. 한글로 작성된 글
-4. 5줄 이상으로 작성된 글
-5. 이미 DB에 저장한 글
-
-위의 조건들에 부합하지 않는 글들은 크롤링에서 제외시키도록 하겠습니다.
-
 ### 크롤링
 
+크롤링은 다음과 같은 순서로 진행될 거에요
 
+    1. Chrome Driver 환경설정
+    2. 키워드 검색 후 결과 URL Set으로 저장
+    3. 해당 포스트 URL에서 작성일, 작성자, 제목, html 추출 후 Elastic Search Server에 저장
 
+#### Chrome Driver 환경설정
 
+Chrome Driver 환경설정은 간단해요. 자신의 Chrome Version과 맞는 Chrome Driver를 로컬에 저장하면 됩니다.
 
+제 버전은 **119.0.6045.160**입니다. 이 버전에 맞는 ChromeDriver를 다운로드 하면 됩니다!
 
+그리고 이 경로를 설정파일에 저장해 줍니다.
+
+````yaml
+selenium:
+  web-driver-id: webdriver.chrome.driver
+  web-driver-path: C:\javas\chromedriver.exe
+````
+
+이 경로를 통해 환경설정을 마무리 해주면 됩니다.
+
+````java
+@Configuration
+public class ChromeDriverConfig {
+
+    @Value("${selenium.web-driver-id}")
+    private String web_driver_id;
+
+    @Value("${selenium.web-driver-path}")
+    private String web_driver_path;
+
+    @Bean
+    public ChromeDriver chromeDriver(){
+        System.setProperty(web_driver_id,web_driver_path);
+        ChromeOptions chromeOptions = new ChromeOptions();
+        //chromeOptions.addArguments("headless");
+        chromeOptions.addArguments("--start-maximized");
+        chromeOptions.setPageLoadStrategy(PageLoadStrategy.NORMAL);
+        return new ChromeDriver(chromeOptions);
+    }
+}
+````
+
+chromeOption은 취향껏 선택하면 됩니다. 제가 주석처리 해놓은 headless 옵션은 크롤링 시 웹 브라우저를
+켜놓을 지 선택하는 옵션이에요. 저는 개발 당시 제가 작성한 대로 버튼이 클릭되는지 확인하기 위해 주석처리 한 상태로 개발을 진행했습니다.
+
+#### 키워드 검색 후 결과 URL Set으로 저장
+
+````java
+@Service
+@RequiredArgsConstructor
+public class CrawlingServiceImpl implements CrawlingService{
+
+    private final ChromeDriver chromeDriver;
+    private final String DAUM_URL = "https://www.daum.net/";
+    private Set<String> tistoryURLList = new HashSet<>();
+
+    private void urlListInit() {
+        final String[] keywords = SearchList.javaSpringBootKeywords;
+        for(String keyword:keywords){
+            searchKeyWord(keyword);
+            clickTotalWebButton();
+            setUrlList();
+            break;
+        }
+    }
+
+    private void searchKeyWord(String keyword){
+        chromeDriver.get(DAUM_URL);
+        WebElement searchBar = chromeDriver.findElement(By.className("tf_keyword"));
+        searchBar.sendKeys(keyword);
+        WebElement searchButton = chromeDriver.findElement(By.className("btn_search"));
+        searchButton.click();
+    }
+
+    private void clickTotalWebButton(){
+
+        List<WebElement> tabList = chromeDriver.findElements(By.className("txt_tab"));
+        for(WebElement webElement:tabList){
+            if(webElement.getText().equals("통합웹")) {
+                webElement.click();
+                return;
+            }
+        }
+    }
+
+    private void setUrlList(){
+        List<WebElement> list = chromeDriver.findElements(By.className("item-title"));
+        for(WebElement webElement:list){
+            String url = getURL(webElement);
+            if(isTistory(url)) tistoryURLList.add(url);
+        }
+    }
+
+    private String getURL(WebElement webElement){
+        return webElement.findElement(By.cssSelector("c-title")).getAttribute("data-href");
+    }
+
+    private boolean isTistory(String url){
+        return url.contains("tistory.com");
+    }
+
+    @Override
+    public void crawling() {
+        urlListInit();
+    }
+}
+
+````
+
+로직은 다음과 같습니다.
+
+    1. 검색창에 keyword 검색 후 검색 버튼 누르기
+    2. 통합웹으로 이동
+    3. tistory에서 작성된 URL 긁어오기
+    4. set에 저장
+
+#### 해당 포스트 URL에서 작성일, 작성자, 제목, html 추출 후 Elastic Search Server에 저장
 

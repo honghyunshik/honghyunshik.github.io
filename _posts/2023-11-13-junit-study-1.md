@@ -161,3 +161,86 @@ matches() 메서드는 Criteria의 각 Criterion이 프로파일에 있는 답�
 ### 2. 어떤 테스트를 작성할 수 있는지 결정
 
 어느정도의 테스트 코드를 작성해야 할까요? 
+
+시작점은 반복문, if문과 복잡한 조건문들로 시작합니다. 이후에는 데이터 변형도 고려해봅니다.
+데이터가 null이거나 0이라면?
+
+Criteria 인스턴스가 단순히 Criterion 객체 한 개를 포함하는 것은 문제가 없겠죠. 하지만 그렇게 단순하지 않습니다.
+다음은 고려해 볼만한 테스트 케이스입니다.
+
+    1. Criteria 인스턴스가 Criterion 객체를 포함하지 않을 때
+    2. Criteria 인스턴스가 다수의 Criterion 객체를 포함할 때
+    3. answers.get()에서 반환된 Answer 객체가 null일 때
+    4. criterion.getAnswer() 혹은 criterion.getAnswer().getQuestionText()의 반환값이 null일 때
+    ...
+
+단순히 객체가 null이라는 가정만 해도 수없이 많은 테스트 케이스가 존재할 수 있습니다. 이걸 다 작성해야 하나요?
+
+### 3. 단일 경로 커버
+
+matches() 메서드에서 필요한 로직은 대부분 for loop 안에 있습니다. 우선은 Profile 인스턴스와 Criteria 인스턴스가 필요하니 생성해 줍시다.
+
+````java
+public class ProfileTest {
+
+  @Test
+  public void test() {
+    Profile profile = new Profile("Bull Hockey, Inc.");
+    Question question = new BooleanQuestion(1, "Got bonuses?");
+    Criteria criteria = new Criteria();
+    Answer criteriaAnswer = new Answer(question, Bool.TRUE);
+    Criterion criterion = new Criterion(criteriaAnswer, Weight.MustMatch);
+    criteria.add(criterion);
+  }
+}
+````
+
+matches() 메서드에서 for loop를 돌면서 answers 해시 맵에서 각 Criterion에 대응하는 Answer 객체를 가져옵니다.
+따라서 사전에 Profile 객체에 적절한 Answer 객체를 넣어줘야 하겠네요
+
+````java
+public class ProfileTest {
+
+  @Test
+  public void test() {
+    Profile profile = new Profile("Bull Hockey, Inc.");
+    Question question = new BooleanQuestion(1, "Got bonuses?");
+    Answer profileAnswer = new Answer(question,Bool.False);
+    profile.add(profileAnswer);     //추가
+    Criteria criteria = new Criteria();     //추가
+    Answer criteriaAnswer = new Answer(question, Bool.TRUE);
+    Criterion criterion = new Criterion(criteriaAnswer, Weight.MustMatch);
+    criteria.add(criterion);
+  }
+}
+````
+
+자 이제 1. 테스트 명을 적절하게 변경하고 2. 실행과 단언 문을 넣어주겠습니다.
+
+````java
+public class ProfileTest {
+
+  @Test
+  public void matchAnswersFalseWhenMustMatchCriteriaNotMet() {
+    Profile profile = new Profile("Bull Hockey, Inc.");
+    Question question = new BooleanQuestion(1, "Got bonuses?");
+    Answer profileAnswer = new Answer(question,Bool.False);
+    profile.add(profileAnswer);     //추가
+    Criteria criteria = new Criteria();     //추가
+    Answer criteriaAnswer = new Answer(question, Bool.TRUE);
+    Criterion criterion = new Criterion(criteriaAnswer, Weight.MustMatch);
+    criteria.add(criterion);
+    
+    boolean matches = profile.matches(criteria);
+    
+    assertFalse(matches);
+  }
+}
+````
+
+이제는 유지 보수성도 고려해야 합니다. 현재 하나의 조건에 코드 10줄이 필요하네요. 조건이 15개로 한다면
+20줄의 코드에 테스트 코드가 150줄이 필요하다? 좀 넌센스입니다.
+
+### 4. 두 번째 테스트 만들기
+
+
